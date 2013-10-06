@@ -29,6 +29,9 @@ int main(void)
 	int iSendResult;
 	char recvbuf[DEFAULT_BUFLEN];
 	char sendbuf[DEFAULT_BUFLEN];
+	char buf[DEFAULT_BUFLEN];
+	char ID[DEFAULT_BUFLEN];
+	char UserName[DEFAULT_BUFLEN];
 
 
 	// Initialize Winsock
@@ -105,37 +108,62 @@ int main(void)
 			return 1;
 		}
 
-
-
-		// Receive until the peer shuts down the connection
-		do {
-
+		//Receive login
+		while(1) 
+		{
 			iResult = recv(ClientSocket, recvbuf, DEFAULT_BUFLEN, 0);
-			if (iResult > 0) {
-				printf("Bytes received: %d\n", iResult);
-
-				// Echo the buffer back to the sender
-				iSendResult = send( ClientSocket, recvbuf, iResult, 0 );
-				if (iSendResult == SOCKET_ERROR) {
-					printf("send failed with error: %d\n", WSAGetLastError());
+			if ( iResult > 0 ) //If we received bytes
+			{
+				iResult = sscanf(recvbuf, "%s\n%s\n", ID, UserName);
+				if (iResult != 2) //If there aren't 2 "arguments"
+				{
+					printf("An error occured communicating with client - Could not get ID/Username.\nConnection closed.\n");
 					closesocket(ClientSocket);
 					WSACleanup();
-					return 1;
+					return 0;
 				}
-				printf("Bytes sent: %d\n", iSendResult);
+				//We have ID/Username, validate
+				if (strncmp(ID, "12345678", 8) == 0 && strncmp(UserName, "isaac", strlen("isaac")) == 0) //Good login
+				{
+					iSendResult = send( ClientSocket, "Success", 7, 0 );
+					if (iSendResult == SOCKET_ERROR) 
+					{
+						printf("send failed with error: %d\n", WSAGetLastError());
+						closesocket(ClientSocket);
+						WSACleanup();
+						return 1;
+					}
+
+					
+				}
+				else //Bad login
+				{
+					iSendResult = send( ClientSocket, "Failure", 7, 0 );
+					if (iSendResult == SOCKET_ERROR) 
+					{
+						printf("send failed with error: %d\n", WSAGetLastError());
+						closesocket(ClientSocket);
+						WSACleanup();
+						return 1;
+					}
+				}
+
 			}
-			else if (iResult == 0)
-				printf("Connection closing...\n");
-			else  {
-				printf("recv failed with error: %d\n", WSAGetLastError());
+			else if ( iResult == 0 )
+			{
+				printf("An error occured communicating with client. Connection closed.\n");
 				closesocket(ClientSocket);
 				WSACleanup();
-				return 1;
+				return 0;
 			}
+			else
+			{
+				printf("ERROR: recv failed with error: %d\n", WSAGetLastError());
+			}
+		}
 
-		} while (iResult > 0);
 
-		// shutdown the connection since we're done
+		// shutdown the connection
 		iResult = shutdown(ClientSocket, SD_SEND);
 		if (iResult == SOCKET_ERROR) {
 			printf("shutdown failed with error: %d\n", WSAGetLastError());

@@ -1,15 +1,15 @@
-﻿Build started 10/6/2013 12:38:01 PM.
+﻿Build started 10/6/2013 4:06:01 PM.
      1>Project "C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\ServerLogin\ServerLogin.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt server.c
          server.c
-     1>c:\users\isaac\projects\455assignment1clientserverlogin\serverlogin\serverlogin\server.c(99): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\isaac\projects\455assignment1clientserverlogin\serverlogin\serverlogin\server.c(102): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(110) : see declaration of 'strcpy'
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\Debug\ServerLogin.exe" /INCREMENTAL /NOLOGO /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\Debug\ServerLogin.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\Debug\ServerLogin.lib" /MACHINE:X86 Debug\server.obj
-         ServerLogin.vcxproj -> C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\Debug\ServerLogin.exe
-     1>Done Building Project "C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\ServerLogin\ServerLogin.vcxproj" (Build target(s)).
+     1>c:\users\isaac\projects\455assignment1clientserverlogin\serverlogin\serverlogin\server.c(117): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(311) : see declaration of 'sscanf'
+     1>c:\users\isaac\projects\455assignment1clientserverlogin\serverlogin\serverlogin\server.c(128): error C2059: syntax error : '}'
+     1>Done Building Project "C:\Users\Isaac\Projects\455Assignment1ClientServerLogin\ServerLogin\ServerLogin\ServerLogin.vcxproj" (Build target(s)) -- FAILED.
 
-Build succeeded.
+Build FAILED.
 
-Time Elapsed 00:00:00.50
+Time Elapsed 00:00:00.26
