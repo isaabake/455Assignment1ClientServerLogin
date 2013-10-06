@@ -28,6 +28,7 @@ int main(int argc, char **argv)
 	char buf[DEFAULT_BUFLEN] = {0};
 	char ID[DEFAULT_BUFLEN] = {0};
 	char UserName[DEFAULT_BUFLEN] = {0};
+	char Password[514] = {0};
 	int bytecount = 0;
 	int iResult;
 
@@ -161,7 +162,16 @@ int main(int argc, char **argv)
 		{
 			if (strncmp(recvbuf, "Success", 7) == 0) //ID/UserName was good. Ask for password.
 			{
-				
+				while (1)
+				{
+					printf("Password: ");
+					fgets(Password, 514, stdin);
+					Password[strlen(Password)-1] = 0; //strip off \n
+
+
+				}
+
+
 			}
 			else if (strncmp(recvbuf, "Failure", 7) == 0) //ID/UserName was bad. Retry
 			{

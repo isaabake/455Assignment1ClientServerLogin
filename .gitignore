@@ -1,5 +1,9 @@
 # Object files
 *.o
+*.pdb
+*.idb
+*.obj
+*.log
 
 # Libraries
 *.lib
@@ -19,3 +23,5 @@
 # settings database crap
 *.sdf
 *.opensdf
+*.suo
+*.ilk
