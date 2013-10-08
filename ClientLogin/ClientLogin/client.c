@@ -28,19 +28,22 @@ int main(int argc, char **argv)
 	char buf[DEFAULT_BUFLEN] = {0};
 	char ID[DEFAULT_BUFLEN] = {0};
 	char UserName[DEFAULT_BUFLEN] = {0};
-	char Password[514] = {0};
-	int bytecount = 0;
+	char Password[DEFAULT_BUFLEN+1] = {0};
 	int iResult;
+	int retry = 0;
+	u_short pwlen = 0;
 
 	// Validate the parameters
-	if (argc != 2) {
+	if (argc != 2) 
+	{
 		printf("usage: %s server-name\n", argv[0]);
 		return 1;
 	}
 
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (iResult != 0) {
+	if (iResult != 0)
+	{
 		printf("WSAStartup failed with error: %d\n", iResult);
 		return 1;
 	}
@@ -52,18 +55,20 @@ int main(int argc, char **argv)
 
 	// Resolve the server address and port
 	iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints, &result);
-	if ( iResult != 0 ) {
+	if ( iResult != 0 ) 
+	{
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
 		return 1;
 	}
 
 	// Attempt to connect to an address until one succeeds
-	for(ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-
+	for(ptr = result; ptr != NULL; ptr = ptr->ai_next) 
+	{
 		// Create a SOCKET for connecting to server
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-		if (ConnectSocket == INVALID_SOCKET) {
+		if (ConnectSocket == INVALID_SOCKET)
+		{
 			printf("socket failed with error: %ld\n", WSAGetLastError());
 			WSACleanup();
 			return 1;
@@ -71,7 +76,8 @@ int main(int argc, char **argv)
 
 		// Connect to server.
 		iResult = connect( ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-		if (iResult == SOCKET_ERROR) {
+		if (iResult == SOCKET_ERROR)
+		{
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
 			continue;
@@ -81,7 +87,8 @@ int main(int argc, char **argv)
 
 	freeaddrinfo(result);
 
-	if (ConnectSocket == INVALID_SOCKET) {
+	if (ConnectSocket == INVALID_SOCKET)
+	{
 		printf("Unable to connect to server!\n");
 		WSACleanup();
 		return 1;
@@ -92,7 +99,6 @@ int main(int argc, char **argv)
 	if ( iResult > 0 ) //If we received bytes
 	{
 		strcat(buf, recvbuf);
-		bytecount += iResult;
 		if (strncmp(buf, "Welcome to The Server\n", 22) == 0)
 		{
 			printf("recv: Welcome to The Server\n");
@@ -114,7 +120,8 @@ int main(int argc, char **argv)
 	}
 
 	//Prompt for ID (8 digit) and Username (20 max char)
-	while(1)
+	retry = 3;
+	while(retry)
 	{
 		memset(buf, 0, DEFAULT_BUFLEN);
 		printf("ID: ");
@@ -162,21 +169,96 @@ int main(int argc, char **argv)
 		{
 			if (strncmp(recvbuf, "Success", 7) == 0) //ID/UserName was good. Ask for password.
 			{
-				while (1)
-				{
-					printf("Password: ");
-					fgets(Password, 514, stdin);
-					Password[strlen(Password)-1] = 0; //strip off \n
-
-
-				}
-
-
+				break;
 			}
 			else if (strncmp(recvbuf, "Failure", 7) == 0) //ID/UserName was bad. Retry
 			{
-				printf("Bad ID/Username. Try again.\n");
-				//retry--;
+				--retry;
+				if (retry)
+				{
+					printf("Bad ID/Username. Try again.\n");
+				}
+				continue;
+			}
+		}
+		else if ( iResult == 0 )
+		{
+			printf("An error occured communicating with the server. Connection closed.\n");
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+		else
+		{
+			printf("ERROR: recv failed with error: %d\n", WSAGetLastError());
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+	}
+
+	if (!retry) //If all retries used, close connection
+	{
+		printf("Retry limit reached. Closing connection...\n");
+		// shutdown the connection
+		iResult = shutdown(ConnectSocket, SD_SEND);
+		if (iResult == SOCKET_ERROR) 
+		{
+			printf("shutdown failed with error: %d\n", WSAGetLastError());
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+		closesocket(ConnectSocket);	
+		system("pause");
+		return 0;
+	}
+
+
+
+	//Prompt for password and send
+	retry = 3;
+	while (retry)
+	{
+		printf("Password: ");
+		scanf("%512s", Password);
+
+		pwlen = htons((short)strlen(Password));
+
+		iResult = send( ConnectSocket, (char*)&pwlen, 2, 0 ); //Send length of password
+		if (iResult == SOCKET_ERROR) 
+		{
+			printf("send failed with error: %d\n", WSAGetLastError());
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+
+		iResult = send( ConnectSocket, Password, strlen(Password), 0 ); //Send password
+		if (iResult == SOCKET_ERROR) 
+		{
+			printf("send failed with error: %d\n", WSAGetLastError());
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+
+		iResult = recv(ConnectSocket, recvbuf, DEFAULT_BUFLEN, 0);
+		if ( iResult > 0 ) //If we received bytes
+		{
+			if (strncmp(recvbuf, "Congratulations", 15) == 0) //Password was good, display message and disconnect
+			{
+				recvbuf[iResult] = 0; //terminate message
+				printf("recv: %s\n", recvbuf);
+				break;
+			}
+			else if (strncmp(recvbuf, "Password incorrect", 7) == 0) //ID/UserName was bad. Retry
+			{
+				--retry;
+				if(retry)
+				{
+					printf("Bad Password. Try again.\n");
+				}
 				continue;
 			}
 		}
@@ -195,41 +277,24 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-
 	}
 
-
-
-
-
+	if (!retry) //If all retries used, alert user.
+	{
+		printf("Retry limit reached. Closing connection...\n");
+	}
 
 	// shutdown the connection 
 	iResult = shutdown(ConnectSocket, SD_SEND);
-	if (iResult == SOCKET_ERROR) {
+	if (iResult == SOCKET_ERROR)
+	{
 		printf("shutdown failed with error: %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
 	}
 
-	// Receive until the peer closes the connection
-	do {
-
-		iResult = recv(ConnectSocket, recvbuf, DEFAULT_BUFLEN, 0);
-		if ( iResult > 0 )
-			printf("Bytes received: %d\n", iResult);
-		else if ( iResult == 0 )
-			printf("Connection closed\n");
-		else
-			printf("recv failed with error: %d\n", WSAGetLastError());
-
-	} while( iResult > 0 );
-
-	// cleanup
-	closesocket(ConnectSocket);
-	WSACleanup();
-
-	scanf_s("%s", buf);
+	system("pause");
 
 	return 0;
 }

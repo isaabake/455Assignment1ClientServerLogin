@@ -27,6 +27,9 @@ int main(void)
 	struct addrinfo hints;
 
 	int iSendResult;
+	u_short pwlen;
+	int retry = 0;
+	char* pwlenchar = (char*)&pwlen;
 	char recvbuf[DEFAULT_BUFLEN];
 	char sendbuf[DEFAULT_BUFLEN];
 	char buf[DEFAULT_BUFLEN];
@@ -109,7 +112,8 @@ int main(void)
 		}
 
 		//Receive login
-		while(1) 
+		retry = 3;
+		while(retry) //Loop for retries
 		{
 			iResult = recv(ClientSocket, recvbuf, DEFAULT_BUFLEN, 0);
 			if ( iResult > 0 ) //If we received bytes
@@ -123,7 +127,7 @@ int main(void)
 					return 0;
 				}
 				//We have ID/Username, validate
-				if (strncmp(ID, "12345678", 8) == 0 && strncmp(UserName, "isaac", strlen("isaac")) == 0) //Good login
+				if (strncmp(ID, "12345678", 8) == 0 && strncmp(UserName, "isaac", iResult) == 0) //Good login
 				{
 					iSendResult = send( ClientSocket, "Success", 7, 0 );
 					if (iSendResult == SOCKET_ERROR) 
@@ -133,8 +137,8 @@ int main(void)
 						WSACleanup();
 						return 1;
 					}
+					break;
 
-					
 				}
 				else //Bad login
 				{
@@ -146,6 +150,7 @@ int main(void)
 						WSACleanup();
 						return 1;
 					}
+					--retry;
 				}
 
 			}
@@ -162,10 +167,102 @@ int main(void)
 			}
 		}
 
+		if (!retry) //If all retries used, close connection
+		{
+			// shutdown the connection
+			iResult = shutdown(ClientSocket, SD_SEND);
+			if (iResult == SOCKET_ERROR) 
+			{
+				printf("shutdown failed with error: %d\n", WSAGetLastError());
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
+			closesocket(ClientSocket);
+			continue;
+		}
+
+
+		//Read Password
+		retry = 3;
+		while(retry) //Loop for retries
+		{
+			iResult = recv(ClientSocket, pwlenchar, 2, 0); //Get password length
+			if ( iResult > 0 ) //If we received bytes
+			{
+				//Get length
+				if (iResult == 2)
+				{
+					pwlen = ntohs(pwlen);
+				}
+				else
+				{
+					printf("An error occured communicating with client. Connection closed.\n");
+					closesocket(ClientSocket);
+					WSACleanup();
+					return 1;
+				}
+			}
+			else if ( iResult == 0 )
+			{
+				printf("An error occured communicating with client. Connection closed.\n");
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
+			else
+			{
+				printf("ERROR: recv failed with error: %d\n", WSAGetLastError());
+			}
+
+			iResult = recv(ClientSocket, recvbuf, pwlen, 0); //Get password
+			if ( iResult > 0 ) //If we received bytes
+			{
+				if (strncmp(recvbuf, "baker", pwlen) == 0 ) //Good password
+				{
+					sprintf(buf, "Congratulations %s; you've just revealed the password for %s to the world", UserName, ID);
+					iSendResult = send( ClientSocket, buf, strlen(buf), 0 );
+					if (iSendResult == SOCKET_ERROR) 
+					{
+						printf("send failed with error: %d\n", WSAGetLastError());
+						closesocket(ClientSocket);
+						WSACleanup();
+						return 1;
+					}
+					break;
+
+				}
+				else //Bad password
+				{
+					iSendResult = send( ClientSocket, "Password incorrect", 18, 0 );
+					if (iSendResult == SOCKET_ERROR) 
+					{
+						printf("send failed with error: %d\n", WSAGetLastError());
+						closesocket(ClientSocket);
+						WSACleanup();
+						return 1;
+					}
+					--retry;
+				}
+			}
+			else if ( iResult == 0 )
+			{
+				printf("An error occured communicating with client. Connection closed.\n");
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
+			else
+			{
+				printf("ERROR: recv failed with error: %d\n", WSAGetLastError());
+			}
+		}
+
 
 		// shutdown the connection
 		iResult = shutdown(ClientSocket, SD_SEND);
-		if (iResult == SOCKET_ERROR) {
+		if (iResult == SOCKET_ERROR) 
+		{
 			printf("shutdown failed with error: %d\n", WSAGetLastError());
 			closesocket(ClientSocket);
 			WSACleanup();
